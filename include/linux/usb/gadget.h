@@ -510,7 +510,9 @@ struct usb_gadget_ops {
  *		 Used in case of more then one core operates concurrently.
  * @streaming_enabled: Enable streaming mode with usb core.
  * @xfer_isr_count: UI (transfer complete) interrupts count
- *
+ * @extra_buf_alloc: Extra allocation size for AXI prefetch so that out of
+ * boundary access is protected.
+*
  * Gadgets have a mostly-portable "gadget driver" implementing device
  * functions, handling all usb configurations and interfaces.  Gadget
  * drivers talk to hardware-specific code indirectly, through ops vectors.
@@ -550,6 +552,7 @@ struct usb_gadget {
 	bool				l1_supported;
 	bool				streaming_enabled;
 	u32				xfer_isr_count;
+	u32				extra_buf_alloc;
 };
 
 static inline void set_gadget_data(struct usb_gadget *gadget, void *data)

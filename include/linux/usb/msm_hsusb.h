@@ -501,6 +501,7 @@ struct ci13xxx_platform_data {
 	void *prv_data;
 	bool l1_supported;
 	bool enable_ahb2ahb_bypass;
+	bool enable_axi_prefetch;
 };
 
 /**
