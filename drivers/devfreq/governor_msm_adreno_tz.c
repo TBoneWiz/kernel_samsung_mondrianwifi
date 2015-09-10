@@ -49,6 +49,18 @@ extern bool cpufreq_screen_on;
 /* Boolean to detect if pm has entered suspend mode */
 static bool suspended = false;
 
+/* Trap into the TrustZone, and call funcs there. */
+static int __secure_tz_entry2(u32 cmd, u32 val1, u32 val2)
+{
+	int ret;
+	spin_lock(&tz_lock);
+	/* sync memory before sending the commands to tz*/
+	__iowmb();
+	ret = scm_call_atomic2(SCM_SVC_IO, cmd, val1, val2);
+	spin_unlock(&tz_lock);
+	return ret;
+}
+
 static int __secure_tz_entry3(u32 cmd, u32 val1, u32 val2, u32 val3)
 {
 	int ret;
