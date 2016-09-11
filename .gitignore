@@ -84,5 +84,3 @@ GTAGS
 *.orig
 *~
 \#*#
-include/linux/netfilter/xt_connmark.h
-include/linux/netfilter/xt_CONNMARK.h
