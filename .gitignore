@@ -64,6 +64,34 @@ include/linux/version.h
 include/generated
 arch/*/include/generated
 
+#
+# Case conflicts
+#
+include\linux\netfilter\xt_connmark.h
+include\linux\netfilter\xt_CONNMARK.h
+include\linux\netfilter\xt_dscp.h
+include\linux\netfilter\xt_DSCP.h
+include\linux\netfilter\xt_mark.h
+include\linux\netfilter\xt_MARK.h
+include\linux\netfilter\xt_rateest.h
+include\linux\netfilter\xt_RATEEST.h
+include\linux\netfilter\xt_tcpmss.h
+include\linux\netfilter\xt_TCPMSS.h
+include\linux\netfilter_ipv4\ipt_ecn.h
+include\linux\netfilter_ipv4\ipt_ECN.h
+include\linux\netfilter_ipv4\ipt_ttl.h
+include\linux\netfilter_ipv4\ipt_TTL.h
+include\linux\netfilter_ipv6\ip6t_hl.h
+include\linux\netfilter_ipv6\ip6t_HL.h
+net\netfilter\xt_dscp.c
+net\netfilter\xt_DSCP.c
+net\netfilter\xt_hl.c
+net\netfilter\xt_HL.c
+net\netfilter\xt_rateest.c
+net\netfilter\xt_RATEEST.c
+net\netfilter\xt_tcpmss.c
+net\netfilter\xt_TCPMSS.c
+
 # stgit generated dirs
 patches-*
 
