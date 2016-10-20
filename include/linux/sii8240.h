@@ -67,6 +67,7 @@ struct sii8240_platform_data {
 	int (*unreg_notifier)(struct notifier_block *nb);
 	u8 power_state;
 	u32 swing_level;
+	u32 damping;
 	bool drm_workaround;
 	int ddc_i2c_num;
 	void (*mhl_sel)(bool enable);
@@ -78,7 +79,11 @@ struct sii8240_platform_data {
 	bool (*vbus_present)(void);
 	int (*muic_otg_set)(int on);
 	int charging_type;
+	void (*int_gpio_config)(bool);
 	/* void (*vbus_present)(bool on); */
+#ifdef CONFIG_MUIC_SUPPORT_MULTIMEDIA_DOCK 
+	bool is_multimediadock;
+#endif
 #ifdef CONFIG_SAMSUNG_MHL_UNPOWERED
 	int (*get_vbus_status)(void);
 	void (*sii9234_otg_control)(bool onoff);

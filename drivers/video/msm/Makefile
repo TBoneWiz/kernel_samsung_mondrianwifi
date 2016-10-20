@@ -1,5 +1,7 @@
 ifeq ($(CONFIG_FB_MSM_MDSS_COMMON),y)
 obj-y += mdss/
+obj-$(CONFIG_VIDEO_MHL_SII8246) += mhl_v2/
+obj-$(CONFIG_VIDEO_MHL_V2) += mhl_v2/
 else
 obj-y := msm_fb.o
 
@@ -193,6 +195,5 @@ endif
 
 obj-$(CONFIG_MSM_VIDC_1080P) += vidc/
 obj-$(CONFIG_MSM_VIDC_720P) += vidc/
-obj-$(CONFIG_VIDEO_MHL_V2) += mhl_v2/
 clean:
 	rm *.o .*cmd

@@ -147,6 +147,7 @@ int msm_dss_config_vreg(struct device *dev, struct dss_vreg *in_vreg,
 				curr_vreg->vreg = NULL;
 				goto vreg_get_fail;
 			}
+
 			type = (regulator_count_voltages(curr_vreg->vreg) > 0)
 					? DSS_REG_LDO : DSS_REG_VS;
 			if (type == DSS_REG_LDO) {
@@ -166,6 +167,7 @@ int msm_dss_config_vreg(struct device *dev, struct dss_vreg *in_vreg,
 	} else {
 		for (i = num_vreg-1; i >= 0; i--) {
 			curr_vreg = &in_vreg[i];
+
 			if (curr_vreg->vreg) {
 				type = (regulator_count_voltages(
 					curr_vreg->vreg) > 0)
@@ -204,6 +206,10 @@ int msm_dss_enable_vreg(struct dss_vreg *in_vreg, int num_vreg, int enable)
 	int i = 0, rc = 0;
 	if (enable) {
 		for (i = 0; i < num_vreg; i++) {
+			if(!strncmp(in_vreg[i].vreg_name, "vdd", 4)) {
+				pr_info("%s : VDD enable skip!!\n", __func__);
+				continue;
+			}
 			rc = PTR_RET(in_vreg[i].vreg);
 			if (rc) {
 				DEV_ERR("%pS->%s: %s regulator error. rc=%d\n",
@@ -234,6 +240,10 @@ int msm_dss_enable_vreg(struct dss_vreg *in_vreg, int num_vreg, int enable)
 	} else {
 		for (i = num_vreg-1; i >= 0; i--)
 			if (regulator_is_enabled(in_vreg[i].vreg)) {
+				if(!strncmp(in_vreg[i].vreg_name, "vdd", 4)) {
+					pr_info("%s : VDD disable skip!!\n", __func__);
+					continue;
+				}
 				if (in_vreg[i].pre_off_sleep)
 					msleep(in_vreg[i].pre_off_sleep);
 				regulator_set_optimum_mode(in_vreg[i].vreg,
