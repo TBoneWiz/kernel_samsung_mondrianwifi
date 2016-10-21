@@ -481,14 +481,6 @@ static void of_sii8240_gpio_config(enum mhl_sleep_state sleep_status)
 			pr_err("[ERROR] %s() gpio_mhl_en is NULL\n", __func__);
 		}
 	}
-#if defined(CONFIG_MACH_KACTIVELTE_DCM)
-	gpio_tlmm_config (GPIO_CFG(pdata->gpio_mhl_sda, GPIOMUX_FUNC_3,
-				GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
-			GPIO_CFG_ENABLE);
-	gpio_tlmm_config (GPIO_CFG(pdata->gpio_mhl_scl, GPIOMUX_FUNC_3,
-				GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
-			GPIO_CFG_ENABLE);
-#endif
 }
 
 static void of_sii8240_hw_onoff(bool onoff)
@@ -699,14 +691,10 @@ static int of_sii8240_parse_dt(void)
 	if (pdata->gpio_ta_int > 0)
 		pr_info("gpio: ta_int = %d\n", pdata->gpio_ta_int);
 
-#ifdef	CONFIG_MACH_LT03_EUR
-	pdata->swing_level = 0x0D; /*1 5*/
-	pr_info("swing_level = 0x%X\n", pdata->swing_level);
-#else
 	if (!of_property_read_u32(np, "sii8240,swing_level",
 				&pdata->swing_level))
 		pr_info("swing_level = 0x%X\n", pdata->swing_level);
-#endif
+
 	if (!of_property_read_u32(np, "sii8240,damping",
 				&pdata->damping))
 		pr_info("damping = 0x%X\n", pdata->damping);

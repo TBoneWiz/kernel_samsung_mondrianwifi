@@ -16,11 +16,6 @@
 
 #include <linux/platform_device.h>
 #include <linux/types.h>
-#if defined(CONFIG_FB_MSM_MDSS_S6E8AA0A_HD_PANEL)
-#include "smart_mtp_s6e8aa0x01.h"
-#include "smart_dimming.h"
-typedef unsigned int boolean;
-#endif
 
 /* panel id type */
 struct panel_id {
@@ -165,9 +160,6 @@ enum mdss_intf_events {
 	MDSS_EVENT_PANEL_ON,
 	MDSS_EVENT_BLANK,
 	MDSS_EVENT_PANEL_OFF,
-#if defined(CONFIG_FB_MSM_MDSS_S6E8AA0A_HD_PANEL)
-	MTP_READ,
-#endif
 	MDSS_EVENT_CLOSE,
 	MDSS_EVENT_SUSPEND,
 	MDSS_EVENT_RESUME,
@@ -186,12 +178,6 @@ enum mdss_intf_events {
 	MDSS_EVENT_REGISTER_RECOVERY_HANDLER,
 	MDSS_EVENT_DSI_DYNAMIC_SWITCH,
 	MDSS_EVENT_BACKLIGHT_LATE_ON,
-#if defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OCTA_CMD_WQHD_PT_PANEL)
-	MDSS_EVENT_TE_UPDATE,
-	MDSS_EVENT_TE_UPDATE2,
-	MDSS_EVENT_TE_SET,
-	MDSS_EVENT_TE_RESTORE,
-#endif
 };
 
 struct lcd_panel_info {
@@ -402,15 +388,6 @@ struct mdss_panel_info {
 	void (*alpm_gamma_read) (void);
 };
 
-#if defined(CONFIG_FB_MSM_MDSS_S6E8AA0A_HD_PANEL)
-#define MTP_DATA_SIZE (24)
-#define ELVSS_DATA_SIZE (24)
-
-struct cmd_set {
-	struct dsi_cmd_desc *cmd;
-	int size;
-};
-#endif
 /* ALPM Flags */
 enum {
 	/* Status Flags */
@@ -451,38 +428,6 @@ struct mdss_panel_data {
 
 	struct mdss_panel_data *next;
 
-#if defined(CONFIG_FB_MSM_MDSS_S6E8AA0A_HD_PANEL)
-	unsigned char *gamma_smartdim_4_8;
-	int *lux_table;
-	int lux_table_max_cnt;
-	struct SMART_DIM smart_s6e8aa0x01;
-	struct SMART_DIM smart_ea8868;
-
-	struct str_smart_dim smart;
-	signed char lcd_current_cd_idx;
-	unsigned char lcd_mtp_data[MTP_DATA_SIZE+16] ;
-	unsigned char lcd_elvss_data[ELVSS_DATA_SIZE+16];
-	unsigned char *gamma_smartdim;
-	unsigned char *gamma_initial;
-
-	struct cmd_set gamma_update;
-	struct cmd_set elvss_update;
-	struct cmd_set elvss_update_4_8;
-
-	struct cmd_set acl_on;
-	struct cmd_set acl_off;
-	struct cmd_set acl_update;
-
-	int (*set_gamma)(int bl_level, int gamma_mode);
-	int (*set_acl)(int bl_level);
-	int (*set_elvss)(int bl_level);
-	int (*set_elvss_4_8)(int bl_level);
-	int (*prepare_brightness_control_cmd_array)(int lcd_type, int bl_level);
-
-	struct cmd_set combined_ctrl;
-
-	boolean ldi_acl_stat;
-#endif
 };
 
 /**
