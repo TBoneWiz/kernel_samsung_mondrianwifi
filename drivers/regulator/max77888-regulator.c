@@ -485,14 +485,14 @@ static __devinit int max77888_pmic_probe(struct platform_device *pdev)
 	max77888->num_regulators = pdata->num_regulators;
 	platform_set_drvdata(pdev, max77888);
 	i2c = max77888->iodev->i2c;
-	pr_info("[%s:%d] pdata->num_regulators:%d\n", __FILE__, __LINE__,
-		pdata->num_regulators);
+/*	pr_info("[%s:%d] pdata->num_regulators:%d\n", __FILE__, __LINE__,
+		pdata->num_regulators); */
 	for (i = 0; i < pdata->num_regulators; i++) {
 
 		const struct voltage_map_desc *desc;
 		int id = pdata->regulators[i].id;
-		pr_info("[%s:%d] for in pdata->num_regulators:%d\n", __FILE__,
-			__LINE__, pdata->num_regulators);
+/*		pr_info("[%s:%d] for in pdata->num_regulators:%d\n", __FILE__,
+			__LINE__, pdata->num_regulators); */
 		desc = reg_voltage_map[id];
 		if (id == MAX77888_ESAFEOUT1 || id == MAX77888_ESAFEOUT2)
 			regulators[id].n_voltages = 4;
