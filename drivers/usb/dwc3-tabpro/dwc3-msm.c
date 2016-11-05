@@ -204,9 +204,9 @@ struct dwc3_msm {
 	atomic_t                pm_suspended;
 	atomic_t		in_lpm;
 	int			hs_phy_irq;
+	unsigned long		dwc3_irq_enabled;
 	int			hsphy_init_seq;
 	int			deemphasis_val;
-	bool			lpm_irq_seen;
 	struct delayed_work	resume_work;
 	struct work_struct	restart_usb_work;
 	bool			in_restart;
@@ -1756,7 +1756,7 @@ static const char *chg_to_string(enum dwc3_chg_type chg_type)
 }
 
 #define DWC3_CHG_DCD_POLL_TIME		(100 * HZ/1000) /* 100 msec */
-#define DWC3_CHG_DCD_MAX_RETRIES	6 /* Tdcd_tmout = 6 * 100 msec */
+#define DWC3_CHG_DCD_MAX_RETRIES	15 /* Tdcd_tmout = 100 * 100 msec */
 #define DWC3_CHG_PRIMARY_DET_TIME	(50 * HZ/1000) /* TVDPSRC_ON */
 #define DWC3_CHG_SECONDARY_DET_TIME	(50 * HZ/1000) /* TVDMSRC_ON */
 
@@ -1896,8 +1896,6 @@ static int dwc3_msm_suspend(struct dwc3_msm *mdwc)
 	}
 
 	host_ss_active = dwc3_msm_read_reg(mdwc->base, USB3_PORTSC) & PORT_PE;
-	if (mdwc->hs_phy_irq)
-		disable_irq(mdwc->hs_phy_irq);
 
 	if (cancel_delayed_work_sync(&mdwc->chg_work))
 		dev_dbg(mdwc->dev, "%s: chg_work was pending\n", __func__);
@@ -2016,17 +2014,16 @@ static int dwc3_msm_suspend(struct dwc3_msm *mdwc)
 	dwc3_ssusb_config_vddcx(mdwc, 0);
 	if (!host_bus_suspend && !dcp)
 		dwc3_hsusb_config_vddcx(mdwc, 0);
+
+	/* arm the interrupt only for host mode lpm */
+	if (host_bus_suspend && mdwc->hs_phy_irq &&
+			!test_and_set_bit(0, &mdwc->dwc3_irq_enabled))
+		enable_irq_wake(mdwc->hs_phy_irq);
+
 	pm_relax(mdwc->dev);
 	atomic_set(&mdwc->in_lpm, 1);
 
 	dev_info(mdwc->dev, "DWC3 in low power mode\n");
-
-	if (mdwc->hs_phy_irq) {
-		enable_irq(mdwc->hs_phy_irq);
-		/* with DCP we dont require wakeup using HS_PHY_IRQ */
-		if (dcp || !mdwc->vbus_active) // add SAMSUNG
-			disable_irq_wake(mdwc->hs_phy_irq);
-	}
 
 	return 0;
 }
@@ -2162,16 +2159,11 @@ static int dwc3_msm_resume(struct dwc3_msm *mdwc)
 		 */
 		dwc3_msm_ss_phy_reg_init(mdwc);
 	}
-	atomic_set(&mdwc->in_lpm, 0);
+	/* Disarm the interrupt once the controller is out of lpm */
+	if (test_and_clear_bit(0, &mdwc->dwc3_irq_enabled))
+		disable_irq_wake(mdwc->hs_phy_irq);
 
-	/* match disable_irq call from isr */
-	if (mdwc->lpm_irq_seen && mdwc->hs_phy_irq) {
-		enable_irq(mdwc->hs_phy_irq);
-		mdwc->lpm_irq_seen = false;
-	}
-	/* it must DCP disconnect, re-enable HS_PHY wakeup IRQ */
-	if ((mdwc->hs_phy_irq && dcp) || !mdwc->vbus_active) // add SAMSUNG
-		enable_irq_wake(mdwc->hs_phy_irq);
+	atomic_set(&mdwc->in_lpm, 0);
 
 	dev_info(mdwc->dev, "DWC3 exited from low power mode\n");
 
@@ -2338,10 +2330,9 @@ static irqreturn_t msm_dwc3_irq(int irq, void *data)
 
 	if (atomic_read(&mdwc->in_lpm)) {
 		dev_dbg(mdwc->dev, "%s received in LPM\n", __func__);
-		mdwc->lpm_irq_seen = true;
-		disable_irq_nosync(irq);
 		queue_delayed_work(system_nrt_wq, &mdwc->resume_work, 0);
 	} else {
+		/* With current implementation should never end up here */
 		pr_info_ratelimited("%s: IRQ outside LPM\n", __func__);
 	}
 #endif
@@ -2371,7 +2362,7 @@ static int dwc3_msm_power_get_property_usb(struct power_supply *psy,
 		val->intval = mdwc->online;
 		break;
 	case POWER_SUPPLY_PROP_TYPE:
-		val->intval = psy->type;
+		psy->type = val->intval;
 		break;
 	default:
 		return -EINVAL;
@@ -2422,8 +2413,12 @@ static int dwc3_msm_power_set_property_usb(struct power_supply *psy,
 		mdwc->current_max = val->intval;
 		break;
 	case POWER_SUPPLY_PROP_TYPE:
-		psy->type = val->intval;
-		break;
+		/*
+		 * Since setting POWER_SUPPLY_PROP_TYPE doesn't
+		 * do anything bail out here, it's not necessary
+		 * to generate a power supply event.
+		 */
+		return 0;
 	default:
 		return -EINVAL;
 	}
@@ -2474,7 +2469,7 @@ dwc3_msm_property_is_writeable(struct power_supply *psy,
 
 
 static char *dwc3_msm_pm_power_supplied_to[] = {
-	"battery",
+	"ac",
 };
 
 static enum power_supply_property dwc3_msm_pm_power_props_usb[] = {
@@ -3046,7 +3041,6 @@ static int __devinit dwc3_msm_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "irqreq HSPHYINT failed\n");
 			goto disable_hs_ldo;
 		}
-		enable_irq_wake(mdwc->hs_phy_irq);
 	}
 
 	if (mdwc->ext_xceiv.otg_capability) {
