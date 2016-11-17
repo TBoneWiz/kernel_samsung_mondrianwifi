@@ -813,9 +813,7 @@ static const struct file_operations ashmem_fops = {
 	.llseek = ashmem_llseek,
 	.mmap = ashmem_mmap,
 	.unlocked_ioctl = ashmem_ioctl,
-#ifdef CONFIG_COMPAT
-	.compat_ioctl = compat_ashmem_ioctl,
-#endif
+	.compat_ioctl = ashmem_ioctl,
 };
 
 static struct miscdevice ashmem_misc = {
