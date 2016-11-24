@@ -134,7 +134,8 @@ static int f2fs_xattr_advise_get(struct dentry *dentry, const char *name,
 	if (strcmp(name, "") != 0)
 		return -EINVAL;
 
-	*((char *)buffer) = F2FS_I(inode)->i_advise;
+	if (buffer)
+		*((char *)buffer) = F2FS_I(inode)->i_advise;
 	return sizeof(char);
 }
 
@@ -151,6 +152,7 @@ static int f2fs_xattr_advise_set(struct dentry *dentry, const char *name,
 		return -EINVAL;
 
 	F2FS_I(inode)->i_advise |= *(char *)value;
+	mark_inode_dirty(inode);
 	return 0;
 }
 
@@ -496,8 +498,11 @@ static int __f2fs_setxattr(struct inode *inode, int index,
 
 	len = strlen(name);
 
-	if (len > F2FS_NAME_LEN || size > MAX_VALUE_LEN(inode))
+	if (len > F2FS_NAME_LEN)
 		return -ERANGE;
+
+	if (size > MAX_VALUE_LEN(inode))
+		return -E2BIG;
 
 	base_addr = read_all_xattrs(inode, ipage);
 	if (!base_addr)
@@ -581,6 +586,9 @@ static int __f2fs_setxattr(struct inode *inode, int index,
 		inode->i_ctime = CURRENT_TIME;
 		clear_inode_flag(fi, FI_ACL_MODE);
 	}
+	if (index == F2FS_XATTR_INDEX_ENCRYPTION &&
+			!strcmp(name, F2FS_XATTR_NAME_ENCRYPTION_CONTEXT))
+		f2fs_set_encrypted_inode(inode);
 
 	if (ipage)
 		update_inode(inode, ipage);
@@ -602,7 +610,7 @@ int f2fs_setxattr(struct inode *inode, int index, const char *name,
 	if (ipage)
 		return __f2fs_setxattr(inode, index, name, value,
 						size, ipage, flags);
-	f2fs_balance_fs(sbi);
+	f2fs_balance_fs(sbi, true);
 
 	f2fs_lock_op(sbi);
 	/* protect xattr_ver */
@@ -611,5 +619,6 @@ int f2fs_setxattr(struct inode *inode, int index, const char *name,
 	up_write(&F2FS_I(inode)->i_sem);
 	f2fs_unlock_op(sbi);
 
+	f2fs_update_time(sbi, REQ_TIME);
 	return err;
 }
