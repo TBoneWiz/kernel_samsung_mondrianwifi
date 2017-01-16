@@ -3665,7 +3665,7 @@ static int sii8240_msc_irq_handler(struct sii8240_data *sii8240, u8 intr)
 			}
 		}
 		if (sii8240->cbus_ready) {
-			pr_info("sii8240: device capability cbus_ready\n");
+			pr_info("sii8240: DCAP_READY intr\n");
 			if (sii8240_queue_cbus_cmd_locked(sii8240, READ_DEVCAP,
 					MHL_DEVCAP_MHL_VERSION, 0) < 0)
 				pr_info("sii8240: MHL_VERSION read fail\n");
@@ -3688,6 +3688,7 @@ static int sii8240_msc_irq_handler(struct sii8240_data *sii8240, u8 intr)
 					MHL_DEVCAP_VID_LINK_MODE, 0) < 0)
 				pr_info("sii8240: VID_LINK_MODE read fail\n");
 		}
+		msleep(100);
 		if (path_en_changed)
 			sii8240_queue_cbus_cmd_locked(sii8240, WRITE_STAT,
 					CBUS_MHL_STATUS_OFFSET_1,
