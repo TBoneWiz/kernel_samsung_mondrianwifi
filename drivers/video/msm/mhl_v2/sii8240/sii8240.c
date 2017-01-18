@@ -3645,8 +3645,7 @@ static int sii8240_msc_irq_handler(struct sii8240_data *sii8240, u8 intr)
 		pr_info("sii8240: WRITE_STAT received\n");
 
 		sii8240->cbus_ready = cbus_status[0] & MHL_STATUS_DCAP_READY;
-		if (sii8240->cbus_ready)
-			pr_info("sii8240: DCAP_READY intr\n");
+
 		if (!(sii8240->regs.link_mode & MHL_STATUS_PATH_ENABLED) &&
 			(MHL_STATUS_PATH_ENABLED & cbus_status[1])) {
 
@@ -3664,6 +3663,22 @@ static int sii8240_msc_irq_handler(struct sii8240_data *sii8240, u8 intr)
 				pr_err("[ERROR] %s() tmds_control\n",
 					__func__);
 				goto err_exit;
+			}
+		} else if (sii8240->cbus_ready) {
+ 	                u8 *peer_devcap = sii8240->regs.peer_devcap;
+			pr_info("sii8240: DCAP_READY intr\n");
+			/* Read minimal devcap set to initialize charger if MHL not detected */
+			if ((peer_devcap[MHL_DEVCAP_MHL_VERSION] & 0xF0) < 0x20) {
+				if (sii8240_queue_cbus_cmd_locked(sii8240, READ_DEVCAP,
+						MHL_DEVCAP_MHL_VERSION, 0) < 0)
+					pr_info("sii8240: MHL_VERSION read fail\n");
+				if (sii8240_queue_cbus_cmd_locked(sii8240, READ_DEVCAP,
+						MHL_DEVCAP_DEV_CAT, 0) < 0)
+					pr_info("sii8240: DEV_CAT read fail\n");
+				if (sii8240_queue_cbus_cmd_locked(sii8240, READ_DEVCAP,
+						MHL_DEVCAP_FEATURE_FLAG, 0) < 0)
+					pr_info("sii8240: FEATURE_FLAG read fail\n");
+         		pr_info("sii8240: DEVCAP read success!\n");
 			}
 		}
 		if (path_en_changed)
