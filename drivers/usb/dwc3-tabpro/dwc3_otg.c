@@ -188,7 +188,6 @@ static int dwc3_otg_start_host(struct usb_otg *otg, int on)
 	if (!dwc->xhci)
 		return -EINVAL;
 
-#ifdef CONFIG_CHARGER_PM8941
 	if (!dotg->vbus_otg) {
 		dotg->vbus_otg = devm_regulator_get(dwc->dev->parent,
 							"vbus_dwc3");
@@ -199,14 +198,17 @@ static int dwc3_otg_start_host(struct usb_otg *otg, int on)
 			return ret;
 		}
 	}
-#endif
 
 	if (on) {
-#ifdef CONFIG_USB_DEBUG_DETEAILED_LOG
-		dev_info(otg->phy->dev, "%s: turn on host\n", __func__);
-#else
 		dev_dbg(otg->phy->dev, "%s: turn on host\n", __func__);
-#endif
+
+		dwc3_otg_notify_host_mode(otg, on);
+		ret = regulator_enable(dotg->vbus_otg);
+		if (ret) {
+			dev_err(otg->phy->dev, "unable to enable vbus_otg\n");
+			dwc3_otg_notify_host_mode(otg, 0);
+			return ret;
+		}
 
 		/*
 		 * This should be revisited for more testing post-silicon.
@@ -233,36 +235,22 @@ static int dwc3_otg_start_host(struct usb_otg *otg, int on)
 			dev_err(otg->phy->dev,
 				"%s: failed to add XHCI pdev ret=%d\n",
 				__func__, ret);
+			regulator_disable(dotg->vbus_otg);
+			dwc3_otg_notify_host_mode(otg, 0);
 			return ret;
 		}
-
-		dwc3_otg_notify_host_mode(otg, on);
-#ifdef CONFIG_CHARGER_PM8941
-		ret = regulator_enable(dotg->vbus_otg);
-		if (ret) {
-			dev_err(otg->phy->dev, "unable to enable vbus_otg\n");
-			platform_device_del(dwc->xhci);
-			return ret;
-		}
-#endif
 
 		/* re-init OTG EVTEN register as XHCI reset clears it */
 		if (ext_xceiv && !ext_xceiv->otg_capability)
 			dwc3_otg_reset(dotg);
 	} else {
-#ifdef CONFIG_USB_DEBUG_DETEAILED_LOG
-		dev_info(otg->phy->dev, "%s: turn off host\n", __func__);
-#else
 		dev_dbg(otg->phy->dev, "%s: turn off host\n", __func__);
-#endif
 
-#ifdef CONFIG_CHARGER_PM8941
 		ret = regulator_disable(dotg->vbus_otg);
 		if (ret) {
 			dev_err(otg->phy->dev, "unable to disable vbus_otg\n");
 			return ret;
 		}
-#endif
 		dwc3_otg_notify_host_mode(otg, on);
 
 		platform_device_del(dwc->xhci);
