@@ -3667,6 +3667,7 @@ static int sii8240_msc_irq_handler(struct sii8240_data *sii8240, u8 intr)
 		} else if (sii8240->cbus_ready) {
  	                u8 *peer_devcap = sii8240->regs.peer_devcap;
 			pr_info("sii8240: DCAP_READY intr\n");
+			msleep (500);
 			/* Read minimal devcap set to initialize charger if MHL not detected */
 			if ((peer_devcap[MHL_DEVCAP_MHL_VERSION] & 0xF0) < 0x20) {
 				if (sii8240_queue_cbus_cmd_locked(sii8240, READ_DEVCAP,
