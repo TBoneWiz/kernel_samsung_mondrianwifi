@@ -2017,8 +2017,10 @@ static int dwc3_msm_suspend(struct dwc3_msm *mdwc)
 
 	/* arm the interrupt only for host mode lpm */
 	if (host_bus_suspend && mdwc->hs_phy_irq &&
-			!test_and_set_bit(0, &mdwc->dwc3_irq_enabled))
+			!test_and_set_bit(0, &mdwc->dwc3_irq_enabled)) {
+		enable_irq(mdwc->hs_phy_irq);
 		enable_irq_wake(mdwc->hs_phy_irq);
+	}
 
 	pm_relax(mdwc->dev);
 	atomic_set(&mdwc->in_lpm, 1);
@@ -2160,8 +2162,10 @@ static int dwc3_msm_resume(struct dwc3_msm *mdwc)
 		dwc3_msm_ss_phy_reg_init(mdwc);
 	}
 	/* Disarm the interrupt once the controller is out of lpm */
-	if (test_and_clear_bit(0, &mdwc->dwc3_irq_enabled))
+	if (test_and_clear_bit(0, &mdwc->dwc3_irq_enabled)) {
 		disable_irq_wake(mdwc->hs_phy_irq);
+		disable_irq(mdwc->hs_phy_irq);
+	}
 
 	atomic_set(&mdwc->in_lpm, 0);
 
@@ -3041,6 +3045,10 @@ static int __devinit dwc3_msm_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "irqreq HSPHYINT failed\n");
 			goto disable_hs_ldo;
 		}
+		/* Leave the irq line disabled. It is only used for USB host
+		   mode suspend. i.e device plug in to the OTG cable
+		*/
+		disable_irq(mdwc->hs_phy_irq);
 	}
 
 	if (mdwc->ext_xceiv.otg_capability) {
