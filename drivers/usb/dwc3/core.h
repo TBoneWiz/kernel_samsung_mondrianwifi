@@ -227,7 +227,6 @@
 #define DWC3_GFLADJ_REFCLK_FLADJ		(0x3FFF << 8)
 
 /* Device Configuration Register */
-#define DWC3_DCFG_LPM_CAP	(1 << 22)
 #define DWC3_DCFG_DEVADDR(addr)	((addr) << 3)
 #define DWC3_DCFG_DEVADDR_MASK	DWC3_DCFG_DEVADDR(0x7f)
 
