@@ -4105,7 +4105,7 @@ retry:
 			printk(KERN_CONT " locked it.\n");
 	}
 
-	do_each_thread(g, p) {
+	for_each_thread(g, p) {
 		/*
 		 * It's not reliable to print a task's held locks
 		 * if it's not sleeping (or if it's not the current
@@ -4118,7 +4118,7 @@ retry:
 		if (!unlock)
 			if (read_trylock(&tasklist_lock))
 				unlock = 1;
-	} while_each_thread(g, p);
+	}
 
 	printk("\n");
 	printk("=============================================\n\n");

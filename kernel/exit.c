@@ -594,10 +594,10 @@ retry:
 	 * Search through everything else. We should not get
 	 * here often
 	 */
-	do_each_thread(g, c) {
+	for_each_thread(g, c) {
 		if (c->mm == mm)
 			goto assign_new_owner;
-	} while_each_thread(g, c);
+	}
 
 	read_unlock(&tasklist_lock);
 	/*
