@@ -877,7 +877,8 @@ static int xfrm_policy_match(const struct xfrm_policy *pol,
 			     u8 type, u16 family, int dir)
 {
 	const struct xfrm_selector *sel = &pol->selector;
-	int match, ret = -ESRCH;
+	int ret = -ESRCH;
+	bool match;
 
 	if (pol->family != family ||
 	    (fl->flowi_mark & pol->mark.m) != pol->mark.v ||
@@ -999,15 +1000,14 @@ static inline int policy_to_flow_dir(int dir)
 	}
 }
 
-static struct xfrm_policy *xfrm_sk_policy_lookup(struct sock *sk, int dir,
-						 const struct flowi *fl)
+static struct xfrm_policy *xfrm_sk_policy_lookup(const struct sock *sk, int dir,
+						 const struct flowi *fl, u16 family)
 {
 	struct xfrm_policy *pol;
 
 	read_lock_bh(&xfrm_policy_lock);
 	if ((pol = sk->sk_policy[dir]) != NULL) {
-		int match = xfrm_selector_match(&pol->selector, fl,
-						sk->sk_family);
+		bool match = xfrm_selector_match(&pol->selector, fl, family);
 		int err = 0;
 
 		if (match) {
@@ -1794,7 +1794,7 @@ restart:
 
 	if (sk && sk->sk_policy[XFRM_POLICY_OUT]) {
 		num_pols = 1;
-		pols[0] = xfrm_sk_policy_lookup(sk, XFRM_POLICY_OUT, fl);
+		pols[0] = xfrm_sk_policy_lookup(sk, XFRM_POLICY_OUT, fl, family);
 		err = xfrm_expand_policies(fl, family, pols,
 					   &num_pols, &num_xfrms);
 		if (err < 0)
@@ -2069,7 +2069,7 @@ int __xfrm_policy_check(struct sock *sk, int dir, struct sk_buff *skb,
 
 	pol = NULL;
 	if (sk && sk->sk_policy[dir]) {
-		pol = xfrm_sk_policy_lookup(sk, dir, &fl);
+		pol = xfrm_sk_policy_lookup(sk, dir, &fl, family);
 		if (IS_ERR(pol)) {
 			XFRM_INC_STATS(net, LINUX_MIB_XFRMINPOLERROR);
 			return 0;
