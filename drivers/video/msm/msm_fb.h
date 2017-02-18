@@ -213,7 +213,9 @@ struct msm_fb_data_type {
 	struct mutex sync_mutex;
 	struct completion commit_comp;
 	u32 is_committing;
-	struct work_struct commit_work;
+	struct task_struct *commit_thread;
+	wait_queue_head_t commit_queue;
+	int wake_commit_thread;
 	void *msm_fb_backup;
 };
 struct msm_fb_backup_type {
