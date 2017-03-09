@@ -121,7 +121,6 @@ int wlan_hdd_ftm_start(hdd_context_t *pAdapter);
 #include "wlan_hdd_debugfs.h"
 #include "sapInternal.h"
 
-
 #ifdef MODULE
 #define WLAN_MODULE_NAME  module_name(THIS_MODULE)
 #else
@@ -4708,7 +4707,8 @@ static VOS_STATUS hdd_parse_ese_beacon_req(tANI_U8 *pValue,
                                      tCsrEseBeaconReq *pEseBcnReq)
 {
     tANI_U8 *inPtr = pValue;
-    int tempInt = 0;
+    uint8_t input = 0;
+    uint32_t tempInt = 0;
     int j = 0, i = 0, v = 0;
     char buf[32];
 
@@ -4734,11 +4734,11 @@ static VOS_STATUS hdd_parse_ese_beacon_req(tANI_U8 *pValue,
     v = sscanf(inPtr, "%31s ", buf);
     if (1 != v) return -EINVAL;
 
-    v = kstrtos32(buf, 10, &tempInt);
+    v = kstrtos8(buf, 10, &input);
     if ( v < 0) return -EINVAL;
 
-    tempInt = VOS_MIN(tempInt, SIR_ESE_MAX_MEAS_IE_REQS);
-    pEseBcnReq->numBcnReqIe = tempInt;
+    input = VOS_MIN(input, SIR_ESE_MAX_MEAS_IE_REQS);
+    pEseBcnReq->numBcnReqIe = input;
 
     hddLog(LOG1, "Number of Bcn Req Ie fields: %d", pEseBcnReq->numBcnReqIe);
 
@@ -4761,27 +4761,27 @@ static VOS_STATUS hdd_parse_ese_beacon_req(tANI_U8 *pValue,
             v = sscanf(inPtr, "%31s ", buf);
             if (1 != v) return -EINVAL;
 
-            v = kstrtos32(buf, 10, &tempInt);
+            v = kstrtou32(buf, 10, &tempInt);
             if (v < 0) return -EINVAL;
 
             switch (i)
             {
                 case 0:  /* Measurement token */
-                if (tempInt <= 0)
+                if (!tempInt)
                 {
                    VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                             "Invalid Measurement Token(%d)", tempInt);
+                             "Invalid Measurement Token: %u", tempInt);
                    return -EINVAL;
                 }
                 pEseBcnReq->bcnReq[j].measurementToken = tempInt;
                 break;
 
                 case 1:  /* Channel number */
-                if ((tempInt <= 0) ||
+                if ((!tempInt) ||
                     (tempInt > WNI_CFG_CURRENT_CHANNEL_STAMAX))
                 {
                    VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                             "Invalid Channel Number(%d)", tempInt);
+                             "Invalid Channel Number: %u", tempInt);
                    return -EINVAL;
                 }
                 pEseBcnReq->bcnReq[j].channel = tempInt;
@@ -4791,18 +4791,18 @@ static VOS_STATUS hdd_parse_ese_beacon_req(tANI_U8 *pValue,
                 if ((tempInt < eSIR_PASSIVE_SCAN) || (tempInt > eSIR_BEACON_TABLE))
                 {
                    VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                             "Invalid Scan Mode(%d) Expected{0|1|2}", tempInt);
+                             "Invalid Scan Mode(%u) Expected{0|1|2}", tempInt);
                    return -EINVAL;
                 }
                 pEseBcnReq->bcnReq[j].scanMode= tempInt;
                 break;
 
                 case 3:  /* Measurement duration */
-                if (((tempInt <= 0) && (pEseBcnReq->bcnReq[j].scanMode != eSIR_BEACON_TABLE)) ||
-                    ((tempInt < 0) && (pEseBcnReq->bcnReq[j].scanMode == eSIR_BEACON_TABLE)))
+                if (((!tempInt) && (pEseBcnReq->bcnReq[j].scanMode != eSIR_BEACON_TABLE)) ||
+                    ((pEseBcnReq->bcnReq[j].scanMode == eSIR_BEACON_TABLE)))
                 {
                    VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                             "Invalid Measurement Duration(%d)", tempInt);
+                             "Invalid Measurement Duration: %u", tempInt);
                    return -EINVAL;
                 }
                 pEseBcnReq->bcnReq[j].measurementDuration = tempInt;
@@ -8938,117 +8938,6 @@ free_hdd_ctx:
    hdd_set_ssr_required (VOS_FALSE);
 }
 
-/*modify for wifi mac*/
-#ifdef    CONFIG_VEGETALTE_COMMON
-static VOS_STATUS hdd_update_wifi_mac(hdd_context_t* pHddCtx)
-{
-	struct file *fp      = NULL;
-	char* filepath       = "/persist/softmac";
-	char macbuf[20]      ={0};
-	int ret              = 0;
-	mm_segment_t oldfs   = {0};
-	char random_mac[20]  = {0};
-	unsigned int softmac[6];
-
-	//first output random wifi mac address.
-	random_mac[0] = 0x00; /* locally administered */
-	random_mac[1] = 0x23;
-	random_mac[2] = 0xB1;
-	random_mac[3] = 0x11;//random32() & 0xff;
-	random_mac[4] = 0x22;//random32() & 0xff;
-	random_mac[5] = 0x33;//random32() & 0xff;
-		
-	fp = filp_open(filepath, O_RDWR, 0666);
-	if(IS_ERR(fp)) {
-		printk("[WIFI] %s: File open error\n", filepath);
-		return VOS_STATUS_E_FAILURE;
-	}
-	
-	oldfs = get_fs();
-	set_fs(get_ds());    
-
-	if(fp->f_mode & FMODE_READ) {
-		ret = fp->f_op->read(fp, (char *)macbuf, 17, &fp->f_pos);
-		if(ret < 0)
-			printk("[WIFI] Mac address [%s] Failed to read from File: %s\n", macbuf, filepath);
-		else
-			printk("[WIFI] Mac address [%s] read from File: %s\n", macbuf, filepath);
-	}
-	
-	set_fs(oldfs);
-
-	if (fp)
-	    filp_close(fp, NULL);
-		
-	if (sscanf(macbuf, "%02x:%02x:%02x:%02x:%02x:%02x",
-								&softmac[0], &softmac[1], &softmac[2],
-								&softmac[3], &softmac[4], &softmac[5])==6) 
-	{
-		if (memcmp(macbuf, "00:00:00:00:00:00", 17) != 0){
-			int i;
-			for (i = 0; i < 6; i++)
-			{
-			   pHddCtx->cfg_ini->intfMacAddr[0].bytes[i]= softmac[i] & 0xff;
-			}
-	        printk("wifi mac is =%02X:%02X:%02X:%02X:%02X:%02X\n",
-	            pHddCtx->cfg_ini->intfMacAddr[0].bytes[0], 
-	            pHddCtx->cfg_ini->intfMacAddr[0].bytes[1],
-	            pHddCtx->cfg_ini->intfMacAddr[0].bytes[2], 
-	            pHddCtx->cfg_ini->intfMacAddr[0].bytes[3], 
-	            pHddCtx->cfg_ini->intfMacAddr[0].bytes[4], 
-	            pHddCtx->cfg_ini->intfMacAddr[0].bytes[5]);
-		}else{		 
-			struct file *fp      = NULL;
-			char mac_in[20]      ={0};
-			int ret              = 0;
-			mm_segment_t oldfs   = {0};
-			printk("wxun: has softmac file but mac address is invalid(00:00:00:00:00:00), so write random mac address to softmac file.\n");
-			fp = filp_open(filepath, O_RDWR | O_CREAT, 0666);
-	    	if(IS_ERR(fp)) {
-	    		printk("[WIFI] %s: File open error\n", filepath);
-	    		return VOS_STATUS_E_FAILURE;
-	    	}
-	    	
-			oldfs = get_fs();
-			set_fs(get_ds());
-	        
-	        printk("random_mac is =%02X:%02X:%02X:%02X:%02X:%02X\n",
-	            random_mac[0], random_mac[1],random_mac[2], random_mac[3], random_mac[4], random_mac[5]);
-
-	    	if(fp->f_mode & FMODE_WRITE) {			
-			sprintf(mac_in,"%02x:%02x:%02x:%02x:%02x:%02x",
-	                     random_mac[0], random_mac[1], random_mac[2],
-	                     random_mac[3], random_mac[4], random_mac[5]);
-	    		ret = fp->f_op->write(fp, (const char *)mac_in, 17, &fp->f_pos);
-	    		if(ret < 0)
-	    			printk("[WIFI] Mac address [%s] Failed to write into File: %s\n", mac_in, filepath);
-	    		else
-	    			printk("[WIFI] Mac address [%s] written into File: %s\n", mac_in, filepath);
-	    	}
-	    	
-			set_fs(oldfs);
-
-			if (fp)
-			    filp_close(fp, NULL);
-
-			if (sscanf(mac_in, "%02x:%02x:%02x:%02x:%02x:%02x",
-								&softmac[0], &softmac[1], &softmac[2],
-								&softmac[3], &softmac[4], &softmac[5])==6) 
-			{
-				int i;
-				for (i = 0; i < 6; i++)
-				{
-				   pHddCtx->cfg_ini->intfMacAddr[0].bytes[i]= softmac[i] & 0xff;
-				}				
-			}
-				
-	    }
-	}
-	return VOS_STATUS_SUCCESS;
-
-}
-#endif
-/*end*/
 
 /**---------------------------------------------------------------------------
 
@@ -10097,14 +9986,7 @@ int hdd_wlan_startup(struct device *dev )
                 "using MAC from ini file ", __func__);
       }
    }
-#ifdef    CONFIG_VEGETALTE_COMMON
-   else if (
-        (VOS_STATUS_SUCCESS != hdd_update_config_from_nv(pHddCtx)) &&
-        (VOS_STATUS_SUCCESS != hdd_update_wifi_mac(pHddCtx))
-    )
-#else
-	   else if (VOS_STATUS_SUCCESS != hdd_update_config_from_nv(pHddCtx))
-#endif
+   else if (VOS_STATUS_SUCCESS != hdd_update_config_from_nv(pHddCtx))
    {
       // Apply the NV to cfg.dat
       /* Prima Update MAC address only at here */
@@ -10721,11 +10603,11 @@ static int hdd_driver_init( void)
 
 #ifdef HAVE_WCNSS_CAL_DOWNLOAD
    /* wait until WCNSS driver downloads NV */
-   while (!wcnss_device_ready() && 5 >= ++max_retries) {
+   while (!wcnss_device_ready() && 10 >= ++max_retries) {
        msleep(1000);
    }
 
-   if (max_retries >= 5) {
+   if (max_retries >= 10) {
       hddLog(VOS_TRACE_LEVEL_FATAL,"%s: WCNSS driver not ready", __func__);
       vos_wake_lock_destroy(&wlan_wake_lock);
 #ifdef WLAN_LOGGING_SOCK_SVC_ENABLE

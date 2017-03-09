@@ -690,13 +690,13 @@ limCleanupRxPath(tpAniSirGlobal pMac, tpDphHashNode pStaDs,tpPESession psessionE
              * There is no context at Polaris to delete.
              * Release our assigned AID back to the free pool
              */
-            if ((psessionEntry->limSystemRole == eLIM_AP_ROLE) || 
+            if ((psessionEntry->limSystemRole == eLIM_AP_ROLE) ||
                 (psessionEntry->limSystemRole == eLIM_BT_AMP_AP_ROLE))
-            {    
+            {
+                limDelSta(pMac, pStaDs, false, psessionEntry);
                 limReleasePeerIdx(pMac, pStaDs->assocId, psessionEntry);
             }
             limDeleteDphHashEntry(pMac, pStaDs->staAddr, pStaDs->assocId,psessionEntry);
-
             return retCode;
         }
     }
@@ -4017,10 +4017,11 @@ tSirRetStatus limStaSendAddBssPreAssoc( tpAniSirGlobal pMac, tANI_U8 updateEntry
                             limGetIElenFromBssDescription( bssDescription ),
                             pBeaconStruct );
 
-    if(pMac->lim.gLimProtectionControl != WNI_CFG_FORCE_POLICY_PROTECTION_DISABLE)
+    if (pMac->lim.gLimProtectionControl != WNI_CFG_FORCE_POLICY_PROTECTION_DISABLE) {
         limDecideStaProtectionOnAssoc(pMac, pBeaconStruct, psessionEntry);
         vos_mem_copy(pAddBssParams->bssId, bssDescription->bssId,
                      sizeof(tSirMacAddr));
+    }
 
     // Fill in tAddBssParams selfMacAddr
     vos_mem_copy(pAddBssParams->selfMacAddr,

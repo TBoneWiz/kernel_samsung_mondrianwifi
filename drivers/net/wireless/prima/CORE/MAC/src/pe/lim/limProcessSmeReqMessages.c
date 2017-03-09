@@ -179,8 +179,8 @@ __limFreshScanReqd(tpAniSirGlobal pMac, tANI_U8 returnFreshResults)
     }
     limLog(pMac, LOG1, FL("FreshScanReqd: %d "), validState);
 
-   if( (validState) && (returnFreshResults & SIR_BG_SCAN_RETURN_FRESH_RESULTS))
-    return TRUE;
+    if( (validState) && (returnFreshResults & SIR_BG_SCAN_RETURN_FRESH_RESULTS))
+        return TRUE;
 
     return FALSE;
 }
@@ -1697,8 +1697,8 @@ __limProcessSmeJoinReq(tpAniSirGlobal pMac, tANI_U32 *pMsgBuf)
     tANI_U16            nSize;
     tANI_U8             sessionId;
     tpPESession         psessionEntry = NULL;
-    tANI_U8             smesessionId;
-    tANI_U16            smetransactionId;
+    tANI_U8             smesessionId = 0;
+    tANI_U16            smetransactionId = 0;
     tPowerdBm           localPowerConstraint = 0, regMax = 0;
     tANI_U16            ieLen;
     v_U8_t              *vendorIE;
@@ -2018,7 +2018,8 @@ __limProcessSmeJoinReq(tpAniSirGlobal pMac, tANI_U32 *pMsgBuf)
         {
             limLog(pMac, LOGP, FL("call to AllocateMemory "
                                 "failed for mlmJoinReq"));
-            return;
+            retCode = eSIR_SME_RESOURCES_UNAVAILABLE;
+            goto end;
         }
         (void) vos_mem_set((void *) pMlmJoinReq, val, 0);
 
@@ -2707,10 +2708,10 @@ __limProcessSmeDisassocReq(tpAniSirGlobal pMac, tANI_U32 *pMsgBuf)
         /// Disassociation is triggered by Link Monitoring
         limLog(pMac, LOG1, FL("Sending Disasscoc with reason Link Monitoring"));
         disassocTrigger = eLIM_LINK_MONITORING_DISASSOC;
-    }
-    else
+    } else {
         disassocTrigger = eLIM_HOST_DISASSOC;
         reasonCode      = smeDisassocReq.reasonCode;
+    }
 
     if (smeDisassocReq.doNotSendOverTheAir)
     {

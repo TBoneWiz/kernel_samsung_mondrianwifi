@@ -3423,6 +3423,13 @@ REG_VARIABLE( CFG_EXTSCAN_ENABLE, WLAN_PARAM_Integer,
                  CFG_DISABLE_BAR_WAKEUP_HOST_DEFAULT,
                  CFG_DISABLE_BAR_WAKEUP_HOST_MIN,
                  CFG_DISABLE_BAR_WAKEUP_HOST_MAX),
+
+  REG_VARIABLE( CFG_MAXCHAN_FOR_CHANTIME_CORR_NAME, WLAN_PARAM_Integer,
+                 hdd_config_t, max_chan_for_dwell_time_cfg,
+                 VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                 CFG_MAXCHAN_FOR_CHANTIME_CORR_DEFAULT,
+                 CFG_MAXCHAN_FOR_CHANTIME_CORR_MIN,
+                 CFG_MAXCHAN_FOR_CHANTIME_CORR_MAX ),
 };
 
 /*
@@ -3482,8 +3489,8 @@ static char *i_trim(char *str)
 
    /* Find the first non white-space*/
    for (ptr = str; i_isspace(*ptr); ptr++);
-      if (*ptr == '\0')
-         return str;
+   if (*ptr == '\0')
+      return str;
 
    /* This is the new start of the string*/
    str = ptr;
@@ -3491,8 +3498,8 @@ static char *i_trim(char *str)
    /* Find the last non white-space */
    ptr += strlen(ptr) - 1;
    for (; ptr != str && i_isspace(*ptr); ptr--);
-      /* Null terminate the following character */
-      ptr[1] = '\0';
+   /* Null terminate the following character */
+   ptr[1] = '\0';
 
    return str;
 }
@@ -3851,6 +3858,9 @@ static void print_hdd_cfg(hdd_context_t *pHddCtx)
           "Name = [disableBarWakeUp] Value = [%u] ",
           pHddCtx->cfg_ini->disableBarWakeUp);
 
+  VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH,
+          "Name = [gMaxChannelForMoreDwellTime] Value = [%u] ",
+          pHddCtx->cfg_ini->max_chan_for_dwell_time_cfg);
 }
 
 
@@ -3928,7 +3938,7 @@ VOS_STATUS hdd_cfg_get_config(hdd_context_t *pHddCtx, char *pBuf, int buflen)
       // ideally we want to return the config to the application
       // however the config is too big so we just printk() for now
 #ifdef RETURN_IN_BUFFER
-      if (curlen <= buflen)
+      if (curlen < buflen)
       {
          // copy string + '\0'
          memcpy(pCur, configStr, curlen+1);
@@ -4706,6 +4716,10 @@ v_BOOL_t hdd_update_config_dat( hdd_context_t *pHddCtx )
 
     if (ccmCfgSetInt(pHddCtx->hHal, WNI_CFG_MCAST_BCAST_FILTER_SETTING, pConfig->mcastBcastFilterSetting,
                      NULL, eANI_BOOLEAN_FALSE)==eHAL_STATUS_FAILURE)
+    {
+       fStatus = FALSE;
+       hddLog(LOGE,"Failure: Could not pass on WNI_CFG_MCAST_BCAST_FILTER_SETTING configuration info to CCM");
+    }
 #endif
 
      if (ccmCfgSetInt(pHddCtx->hHal, WNI_CFG_SINGLE_TID_RC, pConfig->bSingleTidRc,
@@ -5691,6 +5705,8 @@ VOS_STATUS hdd_set_sme_config( hdd_context_t *pHddCtx )
    smeConfig->fDeferIMPSTime = pHddCtx->cfg_ini->deferImpsTime;
    smeConfig->fBtcEnableIndTimerVal = pHddCtx->cfg_ini->btcEnableIndTimerVal;
    smeConfig->csrConfig.roamDelayStatsEnabled = pHddCtx->cfg_ini->gEnableRoamDelayStats;
+   smeConfig->csrConfig.max_chan_for_dwell_time_cfg =
+                        pHddCtx->cfg_ini->max_chan_for_dwell_time_cfg;
 
    vos_set_multicast_logging(pHddCtx->cfg_ini->multicast_host_msgs);
    halStatus = sme_UpdateConfig( pHddCtx->hHal, smeConfig);
