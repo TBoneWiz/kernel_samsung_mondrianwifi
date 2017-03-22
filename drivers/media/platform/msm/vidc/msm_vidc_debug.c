@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -158,6 +158,7 @@ struct dentry *msm_vidc_debugfs_init_core(struct msm_vidc_core *core,
 {
 	struct dentry *dir = NULL;
 	char debugfs_name[MAX_DEBUGFS_NAME];
+	mutex_init(&dbg_buf.lock);
 	if (!core) {
 		dprintk(VIDC_ERR, "Invalid params, core: %p\n", core);
 		goto failed_create_dir;
@@ -169,6 +170,7 @@ struct dentry *msm_vidc_debugfs_init_core(struct msm_vidc_core *core,
 		dprintk(VIDC_ERR, "Failed to create debugfs for msm_vidc\n");
 		goto failed_create_dir;
 	}
+
 	if (!debugfs_create_file("info", S_IRUGO, dir, core, &core_info_fops)) {
 		dprintk(VIDC_ERR, "debugfs_create_file: fail\n");
 		goto failed_create_dir;
