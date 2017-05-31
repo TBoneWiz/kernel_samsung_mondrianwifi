@@ -659,6 +659,17 @@ ssize_t store_UV_mV_table(struct cpufreq_policy *policy,
 }
 #endif
 
+#define UNDERCLOCKED_MAXFREQ_HZ	1958400000
+static bool no_cpu_underclock;
+
+static int __init get_cpu_underclock(char *unused)
+{
+	no_cpu_underclock = true;
+
+	return 0;
+}
+__setup("no_underclock", get_cpu_underclock);
+
 static int clock_krait_8974_driver_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -771,6 +782,18 @@ static int clock_krait_8974_driver_probe(struct platform_device *pdev)
 			dev_info(dev, "Safe voltage plan loaded.\n");
 			pvs = 0;
 			rows = ret;
+		}
+	}
+
+	/* Underclock for better UX */
+	if (!no_cpu_underclock) {
+		while (rows--) {
+			if (freq[rows - 1] == UNDERCLOCKED_MAXFREQ_HZ)
+				break;
+			if (freq[rows - 1] < UNDERCLOCKED_MAXFREQ_HZ) {
+				rows++;
+				break;
+			}
 		}
 	}
 
