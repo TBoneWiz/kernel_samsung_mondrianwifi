@@ -4894,7 +4894,7 @@ static ssize_t sii8240_rda_mhl_version(struct device *dev,
 	return ret;
 
 }
-static DEVICE_ATTR(mhl_version, 0644, sii8240_rda_mhl_version, NULL);
+static DEVICE_ATTR(mhl_version, S_IRUGO, sii8240_rda_mhl_version, NULL);
 
 static ssize_t sii8240_hdcp_status(struct class *dev,
 		struct class_attribute *attr, char *buf)
