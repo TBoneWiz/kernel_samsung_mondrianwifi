@@ -2688,7 +2688,7 @@ __limProcessSmeDisassocReq(tpAniSirGlobal pMac, tANI_U32 *pMsgBuf)
             break;
 
         case eLIM_AP_ROLE:
-    case eLIM_BT_AMP_AP_ROLE:
+        case eLIM_BT_AMP_AP_ROLE:
             // Fall through
             break;
 
@@ -2708,6 +2708,7 @@ __limProcessSmeDisassocReq(tpAniSirGlobal pMac, tANI_U32 *pMsgBuf)
         /// Disassociation is triggered by Link Monitoring
         limLog(pMac, LOG1, FL("Sending Disasscoc with reason Link Monitoring"));
         disassocTrigger = eLIM_LINK_MONITORING_DISASSOC;
+        reasonCode      = smeDisassocReq.reasonCode;
     } else {
         disassocTrigger = eLIM_HOST_DISASSOC;
         reasonCode      = smeDisassocReq.reasonCode;

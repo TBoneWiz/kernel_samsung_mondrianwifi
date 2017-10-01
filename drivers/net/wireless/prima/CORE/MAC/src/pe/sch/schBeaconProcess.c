@@ -337,7 +337,7 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
     tUpdateBeaconParams beaconParams;
     tANI_U8 sendProbeReq = FALSE;
     tpDphHashNode pStaDs = NULL;
-    tANI_U32   channelBondingMode;
+    tANI_U32   channelBondingMode =0;
 #ifdef WLAN_FEATURE_11AC
     tpSirMacMgmtHdr    pMh = WDA_GET_RX_MAC_HEADER(pRxPacketInfo);
     tANI_U16  aid;
@@ -523,27 +523,7 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
                                        limGetMaxRateFlags(pStaDs, psessionEntry));
               }
            }
-        }
-        else
-           schLog(pMac, LOG1,
-                  FL("Self Entry missing in Hash Table or channel bonding mode is disabled"));
-    }
-    /* TODO : Below condition checks can be merged with the if */
 #ifdef WLAN_FEATURE_11AC
-    if ((psessionEntry->limSystemRole == eLIM_STA_ROLE) ||
-        (psessionEntry->limSystemRole == eLIM_BT_AMP_STA_ROLE) ||
-        (psessionEntry->limSystemRole == eLIM_STA_IN_IBSS_ROLE))
-    {
-       // check for VHT capability
-       pStaDs = dphLookupHashEntry(pMac, pMh->sa, &aid,
-             &psessionEntry->dph.dphHashTable);
-
-       /* Update the channel bonding mode only if channel bonding
-        * mode is enabled in INI.
-        */
-       if ( (NULL != pStaDs) && (HAL_STA_INVALID_IDX != pStaDs->staIndex ) &&
-            (WNI_CFG_CHANNEL_BONDING_MODE_DISABLE != channelBondingMode) )
-       {
           if (psessionEntry->vhtCapability && pBeacon->OperatingMode.present )
           {
              operMode = pStaDs->vhtSupportedChannelWidthSet ?
@@ -594,52 +574,54 @@ static void __schBeaconProcessForSession( tpAniSirGlobal      pMac,
              operMode = pStaDs->vhtSupportedChannelWidthSet;
              if (operMode != pBeacon->VHTOperation.chanWidth)
              {
+                schLog(pMac, LOG1,
+                      FL(" received VHTOP CHWidth %d staIdx = %d"),
+                      pBeacon->VHTOperation.chanWidth,
+                      pStaDs->staIndex);
+                schLog(pMac, LOG1, FL(" MAC -" MAC_ADDRESS_STR),
+                                         MAC_ADDR_ARRAY(pMh->sa));
+                if (pBeacon->VHTOperation.chanWidth ==
+                     WNI_CFG_VHT_CHANNEL_WIDTH_80MHZ)
+                {
                    schLog(pMac, LOG1,
-                         FL(" received VHTOP CHWidth %d staIdx = %d"),
-                         pBeacon->VHTOperation.chanWidth,
-                         pStaDs->staIndex);
-                   schLog(pMac, LOG1, FL(" MAC -" MAC_ADDRESS_STR),
-                                            MAC_ADDR_ARRAY(pMh->sa));
-
-                   if (pBeacon->VHTOperation.chanWidth ==
-                         WNI_CFG_VHT_CHANNEL_WIDTH_80MHZ)
+                            FL("Updating the CH Width to 80MHz"));
+                      pStaDs->vhtSupportedChannelWidthSet =
+                      WNI_CFG_VHT_CHANNEL_WIDTH_80MHZ;
+                   pStaDs->htSupportedChannelWidthSet = eHT_CHANNEL_WIDTH_40MHZ;
+                   chWidth = eHT_CHANNEL_WIDTH_80MHZ;
+                }
+                else if (pBeacon->VHTOperation.chanWidth ==
+                      WNI_CFG_VHT_CHANNEL_WIDTH_20_40MHZ)
+                {
+                   pStaDs->vhtSupportedChannelWidthSet =
+                      WNI_CFG_VHT_CHANNEL_WIDTH_20_40MHZ;
+                   if (pBeacon->HTCaps.supportedChannelWidthSet)
                    {
                       schLog(pMac, LOG1,
-                               FL("Updating the CH Width to 80MHz"));
-                         pStaDs->vhtSupportedChannelWidthSet =
-                         WNI_CFG_VHT_CHANNEL_WIDTH_80MHZ;
-                      pStaDs->htSupportedChannelWidthSet = eHT_CHANNEL_WIDTH_40MHZ;
-                      chWidth = eHT_CHANNEL_WIDTH_80MHZ;
+                               FL("Updating the CH Width to 40MHz"));
+                         pStaDs->htSupportedChannelWidthSet =
+                         eHT_CHANNEL_WIDTH_40MHZ;
+                      chWidth = eHT_CHANNEL_WIDTH_40MHZ;
                    }
-                   else if (pBeacon->VHTOperation.chanWidth ==
-                         WNI_CFG_VHT_CHANNEL_WIDTH_20_40MHZ)
+                   else
                    {
-                      pStaDs->vhtSupportedChannelWidthSet =
-                         WNI_CFG_VHT_CHANNEL_WIDTH_20_40MHZ;
-                      if (pBeacon->HTCaps.supportedChannelWidthSet)
-                      {
-                         schLog(pMac, LOG1,
-                                  FL("Updating the CH Width to 40MHz"));
-                            pStaDs->htSupportedChannelWidthSet =
-                            eHT_CHANNEL_WIDTH_40MHZ;
-                         chWidth = eHT_CHANNEL_WIDTH_40MHZ;
-                      }
-                      else
-                      {
-                         schLog(pMac, LOG1,
-                                  FL("Updating the CH Width to 20MHz"));
-                            pStaDs->htSupportedChannelWidthSet =
-                            eHT_CHANNEL_WIDTH_20MHZ;
-                         chWidth = eHT_CHANNEL_WIDTH_20MHZ;
-                      }
+                      schLog(pMac, LOG1,
+                               FL("Updating the CH Width to 20MHz"));
+                         pStaDs->htSupportedChannelWidthSet =
+                         eHT_CHANNEL_WIDTH_20MHZ;
+                      chWidth = eHT_CHANNEL_WIDTH_20MHZ;
                    }
+                }
                 limCheckVHTOpModeChange(pMac, psessionEntry,
                       chWidth, pStaDs->staIndex);
              }
           }
-       }
-    }
 #endif
+        }
+        else
+           schLog(pMac, LOG1,
+                  FL("Self Entry missing in Hash Table or channel bonding mode is disabled"));
+    }
 
 #if defined (FEATURE_WLAN_ESE) || defined (WLAN_FEATURE_VOWIFI)
     /* Obtain the Max Tx power for the current regulatory  */

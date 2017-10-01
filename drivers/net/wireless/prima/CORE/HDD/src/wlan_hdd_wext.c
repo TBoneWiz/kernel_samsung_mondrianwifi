@@ -5345,7 +5345,7 @@ static int __iw_setint_getnone(struct net_device *dev,
                                union iwreq_data *wrqu, char *extra)
 {
     hdd_adapter_t *pAdapter;
-    tHalHandle hHal;
+    tHalHandle hHal = NULL;
     hdd_wext_state_t  *pWextState;
     hdd_context_t *pHddCtx;
     hdd_mon_ctx_t *pMonCtx = NULL;
@@ -5986,7 +5986,7 @@ static int __iw_setint_getnone(struct net_device *dev,
                     ret = -EIO;
                 }
             }
-            else if(FALSE == set_value) {
+            else if(FALSE == set_value && NULL != hHal) {
                 if (sme_SetMaxTxPowerPerBand(eCSR_BAND_24, txPwr, hHal) !=
                                         eHAL_STATUS_SUCCESS) {
                     hddLog(VOS_TRACE_LEVEL_ERROR,
@@ -6763,7 +6763,6 @@ static int __iw_get_char_setnone(struct net_device *dev,
             break;
         }
 #endif
-
         case WE_GET_CFG:
         {
             hdd_cfg_get_config(WLAN_HDD_GET_CTX(pAdapter), extra, WE_MAX_STR_LEN);
@@ -7284,7 +7283,7 @@ static int __iw_set_var_ints_getnone(struct net_device *dev,
                                      union iwreq_data *wrqu, char *extra)
 {
     hdd_adapter_t *pAdapter;
-    tHalHandle hHal;
+    tHalHandle hHal = NULL;
     int sub_cmd;
     int *apps_args = (int *) extra;
     hdd_station_ctx_t *pStaCtx = NULL ;
@@ -7427,7 +7426,7 @@ static int __iw_set_var_ints_getnone(struct net_device *dev,
             {
                 cmd = 287; //Command should be updated if there is any change
                            // in the Riva dump command
-                if((apps_args[0] >= 40 ) && (apps_args[0] <= 160 ))
+                if((apps_args[0] >= 40 ) && (apps_args[0] <= 160 ) && NULL != hHal)
                 {
                     logPrintf(hHal, cmd, staId, apps_args[0], apps_args[1], apps_args[2]);
                 }
