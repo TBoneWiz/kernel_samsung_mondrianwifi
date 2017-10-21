@@ -15,6 +15,7 @@
  */
 #undef barrier
 #undef RELOC_HIDE
+#undef OPTIMIZER_HIDE_VAR
 
 #define barrier() __memory_barrier()
 
