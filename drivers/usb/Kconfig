@@ -123,18 +123,8 @@ config USB
 	  module will be called usbcore.
 
 source "drivers/usb/core/Kconfig"
-
-if MACH_TABPRO
-source "drivers/usb/dwc3-tabpro/Kconfig"
-source "drivers/usb/otg-tabpro/Kconfig"
-
-endif
-
-if !MACH_TABPRO
 source "drivers/usb/dwc3/Kconfig"
 source "drivers/usb/otg/Kconfig"
-
-endif
 
 source "drivers/usb/mon/Kconfig"
 
