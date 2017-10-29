@@ -1030,9 +1030,9 @@ static void dwc3_ep0_end_control_data(struct dwc3 *dwc, struct dwc3_ep *dep)
 static void dwc3_ep0_xfernotready(struct dwc3 *dwc,
 		const struct dwc3_event_depevt *event)
 {
+	struct dwc3_ep	*dep;
 	u8			epnum;
 	int			ret;
-	struct dwc3_ep	*dep;
 
 	dwc->setup_packet_pending = true;
 	epnum = event->endpoint_number;
@@ -1052,7 +1052,6 @@ static void dwc3_ep0_xfernotready(struct dwc3 *dwc,
 		 */
 		dep = dwc->eps[dwc->ep0_expect_in];
 		if (dwc->ep0_expect_in != event->endpoint_number) {
-
 			dev_vdbg(dwc->dev, "Wrong direction for Data phase\n");
 			dwc3_ep0_end_control_data(dwc, dep);
 			dbg_event(epnum, "WRONGDR", 0);
