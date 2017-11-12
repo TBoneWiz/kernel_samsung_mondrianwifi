@@ -711,7 +711,7 @@ static int sec_chg_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
-		val->intval = POWER_SUPPLY_TYPE_UNKNOWN;
+		val->intval = POWER_SUPPLY_TYPE_BATTERY;
 		if (max77888_read_reg(charger->max77888->i2c,
 			MAX77888_CHG_REG_CHG_INT_OK, &reg_data) == 0) {
 			if (reg_data & MAX77888_CHGIN_OK)
