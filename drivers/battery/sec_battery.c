@@ -2853,6 +2853,7 @@ static int sec_bat_get_property(struct power_supply *psy,
 				case POWER_SUPPLY_TYPE_USB_DCP:
 				case POWER_SUPPLY_TYPE_USB_CDP:
 				case POWER_SUPPLY_TYPE_USB_ACA:
+				case POWER_SUPPLY_TYPE_MHL_USB:
 					val->intval =
 						POWER_SUPPLY_STATUS_DISCHARGING;
 					return 0;
