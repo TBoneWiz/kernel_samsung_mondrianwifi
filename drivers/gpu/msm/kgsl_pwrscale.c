@@ -67,8 +67,7 @@ void kgsl_pwrscale_wake(struct kgsl_device *device)
 
 	device->pwrscale.time = ktime_to_us(ktime_get());
 
-	device->pwrscale.next_governor_call = jiffies +
-			msecs_to_jiffies(KGSL_GOVERNOR_CALL_INTERVAL);
+	device->pwrscale.next_governor_call = 0;
 
 	/* to call devfreq_resume_device() from a kernel thread */
 	queue_work(device->pwrscale.devfreq_wq,
@@ -111,6 +110,9 @@ void kgsl_pwrscale_update(struct kgsl_device *device)
 	if (!device->pwrscale.enabled)
 		return;
 
+	if (device->pwrscale.next_governor_call == 0)
+		device->pwrscale.next_governor_call = jiffies;
+
 	if (time_before(jiffies, device->pwrscale.next_governor_call))
 		return;
 
@@ -125,7 +127,7 @@ void kgsl_pwrscale_update(struct kgsl_device *device)
 	}
 
 	/* to call srcu_notifier_call_chain() from a kernel thread */
-	if (device->state != KGSL_STATE_SLUMBER)
+	if (device->requested_state != KGSL_STATE_SLUMBER)
 		queue_work(device->pwrscale.devfreq_wq,
 			&device->pwrscale.devfreq_notify_ws);
 }
@@ -231,7 +233,8 @@ int kgsl_devfreq_target(struct device *dev, unsigned long *freq, u32 flags)
 	 * new level is less than the constraint
 	 */
 	if ((pwr->constraint.type != KGSL_CONSTRAINT_NONE) &&
-		(!time_after(jiffies, pwr->constraint.expires)))
+		(!time_after(jiffies, pwr->constraint.expires)) &&
+		(level >= pwr->constraint.hint.pwrlevel.level))
 			*freq = cur_freq;
 	else {
 		/* Change the power level */
@@ -417,11 +420,7 @@ int kgsl_pwrscale_init(struct device *dev, const char *governor)
 	for (i = 0; i < (pwr->num_pwrlevels - 1); i++)
 		pwrscale->freq_table[out++] = pwr->pwrlevels[i].gpu_freq;
 
-	/*
-	 * Max_state is the number of valid power levels.
-	 * The valid power levels range from 0 - (max_state - 1)
-	 */
-	profile->max_state = pwr->num_pwrlevels - 1;
+	profile->max_state = out;
 	/* link storage array to the devfreq profile pointer */
 	profile->freq_table = pwrscale->freq_table;
 
@@ -472,8 +471,7 @@ int kgsl_pwrscale_init(struct device *dev, const char *governor)
 	INIT_WORK(&pwrscale->devfreq_resume_ws, do_devfreq_resume);
 	INIT_WORK(&pwrscale->devfreq_notify_ws, do_devfreq_notify);
 
-	pwrscale->next_governor_call = jiffies +
-			msecs_to_jiffies(KGSL_GOVERNOR_CALL_INTERVAL);
+	pwrscale->next_governor_call = 0;
 
 	return 0;
 }

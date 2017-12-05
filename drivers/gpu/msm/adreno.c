@@ -356,8 +356,7 @@ static const struct input_device_id adreno_input_ids[] = {
 		/* assumption: MT_.._X & MT_.._Y are in the same long */
 		.absbit = { [BIT_WORD(ABS_MT_POSITION_X)] =
 				BIT_MASK(ABS_MT_POSITION_X) |
-				BIT_MASK(ABS_MT_POSITION_Y) |
-				BIT_MASK(ABS_MT_TRACKING_ID) },
+				BIT_MASK(ABS_MT_POSITION_Y) },
 	},
 	{ },
 };
@@ -2126,6 +2125,7 @@ error_clk_off:
  *
  * Power up the GPU and initialize it.  If priority is specified then elevate
  * the thread priority for the duration of the start operation
+
  */
 static int adreno_start(struct kgsl_device *device, int priority)
 {
@@ -2541,7 +2541,7 @@ static ssize_t _ft_hang_intr_status_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
-	unsigned int new_setting = 0, old_setting;
+	unsigned int new_setting, old_setting;
 	struct kgsl_device *device = kgsl_device_from_dev(dev);
 	struct adreno_device *adreno_dev;
 	int ret;
@@ -3025,7 +3025,7 @@ int adreno_idle(struct kgsl_device *device)
 			adreno_getreg(adreno_dev, ADRENO_REG_RBBM_STATUS) << 2,
 			0x110, 0x110);
 
-	do {
+	while (time_before(jiffies, wait)) {
 		/*
 		 * If we fault, stop waiting and return an error. The dispatcher
 		 * will clean up the fault from the work queue, but we need to
@@ -3038,19 +3038,7 @@ int adreno_idle(struct kgsl_device *device)
 
 		if (adreno_isidle(device))
 			return 0;
-
-	} while (time_before(jiffies, wait));
-
-	/*
-	 * Under rare conditions, preemption can cause the while loop to exit
-	 * without checking if the gpu is idle. check one last time before we
-	 * return failure.
-	 */
-	if (adreno_gpu_fault(adreno_dev) != 0)
-			return -EDEADLK;
-
-	if (adreno_isidle(device))
-			return 0;
+	}
 
 	return -ETIMEDOUT;
 }

@@ -381,9 +381,11 @@ static struct ion_handle* ion_handle_get_check_overflow(struct ion_handle *handl
 
 static int ion_handle_put_nolock(struct ion_handle *handle)
 {
-    int ret;
-    ret = kref_put(&handle->ref, ion_handle_destroy);
-    return ret;
+	int ret;
+
+	ret = kref_put(&handle->ref, ion_handle_destroy);
+
+	return ret;
 }
 
 int ion_handle_put(struct ion_handle *handle)
@@ -459,6 +461,7 @@ static struct ion_handle *ion_handle_get_by_id_nolock(struct ion_client *client,
 						int id)
 {
 	struct ion_handle *handle;
+
 	handle = idr_find(&client->idr, id);
 	if (handle)
 		return ion_handle_get_check_overflow(handle);
@@ -467,15 +470,15 @@ static struct ion_handle *ion_handle_get_by_id_nolock(struct ion_client *client,
 }
 
 struct ion_handle *ion_handle_get_by_id(struct ion_client *client,
-                        int id)
+						int id)
 {
-    struct ion_handle *handle;
+	struct ion_handle *handle;
 
-    mutex_lock(&client->lock);
-    handle = ion_handle_get_by_id_nolock(client, id);
-    mutex_unlock(&client->lock);
+	mutex_lock(&client->lock);
+	handle = ion_handle_get_by_id_nolock(client, id);
+	mutex_unlock(&client->lock);
 
-    return handle;
+	return handle;
 }
 
 static bool ion_handle_validate(struct ion_client *client, struct ion_handle *handle)
@@ -646,7 +649,7 @@ static void ion_free_nolock(struct ion_client *client, struct ion_handle *handle
 		WARN(1, "%s: invalid handle passed to free.\n", __func__);
 		return;
 	}
-    ion_handle_put_nolock(handle);
+	ion_handle_put_nolock(handle);
 }
 
 static void user_ion_free_nolock(struct ion_client *client,
@@ -670,11 +673,11 @@ static void user_ion_free_nolock(struct ion_client *client,
 
 void ion_free(struct ion_client *client, struct ion_handle *handle)
 {
-    BUG_ON(client != handle->client);
+	BUG_ON(client != handle->client);
 
-    mutex_lock(&client->lock);
-    ion_free_nolock(client, handle);
-    mutex_unlock(&client->lock);
+	mutex_lock(&client->lock);
+	ion_free_nolock(client, handle);
+	mutex_unlock(&client->lock);
 }
 EXPORT_SYMBOL(ion_free);
 
@@ -2018,6 +2021,7 @@ struct ion_device *ion_device_create(long (*custom_ioctl)
 	ret = misc_register(&idev->dev);
 	if (ret) {
 		pr_err("ion: failed to register misc device.\n");
+		kfree(idev);
 		return ERR_PTR(ret);
 	}
 

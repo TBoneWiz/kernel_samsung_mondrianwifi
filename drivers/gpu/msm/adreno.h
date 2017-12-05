@@ -142,7 +142,7 @@ struct adreno_dispatcher {
 	struct kgsl_cmdbatch *cmdqueue[ADRENO_DISPATCH_CMDQUEUE_SIZE];
 	unsigned int head;
 	unsigned int tail;
-	struct kthread_work work;
+	struct work_struct work;
 	struct kobject kobj;
 };
 
@@ -589,6 +589,8 @@ static inline int adreno_is_a2xx(struct adreno_device *adreno_dev)
 {
 	return (adreno_dev->gpurev <= 299);
 }
+
+bool adreno_hw_isidle(struct kgsl_device *device);
 
 static inline int adreno_is_a3xx(struct adreno_device *adreno_dev)
 {

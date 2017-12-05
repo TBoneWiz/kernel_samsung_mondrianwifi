@@ -523,6 +523,7 @@ static int kgsl_pwrctrl_idle_timer_show(struct device *dev,
 					char *buf)
 {
 	struct kgsl_device *device = kgsl_device_from_dev(dev);
+
 	if (device == NULL)
 		return 0;
 
@@ -1548,8 +1549,6 @@ void kgsl_pwrctrl_enable(struct kgsl_device *device)
 	struct kgsl_pwrctrl *pwr = &device->pwrctrl;
 	/* Order pwrrail/clk sequence based upon platform */
 	kgsl_pwrctrl_pwrrail(device, KGSL_PWRFLAGS_ON);
-
-	pwr->bus_mod = 0;
 
 	if (pwr->constraint.type == KGSL_CONSTRAINT_NONE)
 		kgsl_pwrctrl_pwrlevel_change(device, pwr->active_pwrlevel);
