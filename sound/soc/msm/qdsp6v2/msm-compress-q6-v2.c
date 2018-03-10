@@ -717,6 +717,7 @@ static int msm_compr_open(struct snd_compr_stream *cstream)
 		return -ENOMEM;
 	}
 
+	runtime->private_data = NULL;
 	prtd->cstream = cstream;
 	pdata->cstream[rtd->dai_link->be_id] = cstream;
 	pdata->audio_effects[rtd->dai_link->be_id] =
