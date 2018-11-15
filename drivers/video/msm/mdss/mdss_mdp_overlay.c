@@ -67,7 +67,6 @@ static struct mdss_mdp_pipe *__overlay_find_pipe(
 {
 	struct mdss_overlay_private *mdp5_data = mfd_to_mdp5_data(mfd);
 	struct mdss_mdp_pipe *tmp, *pipe = NULL;
-
 	mutex_lock(&mdp5_data->list_lock);
 	list_for_each_entry(tmp, &mdp5_data->pipes_used, list) {
 		if (tmp->ndx == ndx) {
@@ -76,7 +75,6 @@ static struct mdss_mdp_pipe *__overlay_find_pipe(
 		}
 	}
 	mutex_unlock(&mdp5_data->list_lock);
-
 	return pipe;
 }
 
@@ -618,7 +616,6 @@ int mdss_mdp_overlay_pipe_setup(struct msm_fb_data_type *mfd,
 			pr_err("invalid pipe ndx=%x\n", req->id);
 			return -ENODEV;
 		}
-
 		ret = mdss_mdp_pipe_map(pipe);
 		if (IS_ERR_VALUE(ret)) {
 			pr_err("Unable to map used pipe%d ndx=%x\n",
@@ -1561,14 +1558,12 @@ static int mdss_mdp_overlay_queue(struct msm_fb_data_type *mfd,
 	struct mdss_mdp_data *src_data;
 	int ret;
 	u32 flags;
-	struct mdss_data_type *mdata = mfd_to_mdata(mfd);
 
 	pipe = __overlay_find_pipe(mfd, req->id);
 	if (!pipe) {
 		pr_err("pipe ndx=%x doesn't exist\n", req->id);
 		return -ENODEV;
 	}
-
 	ret = mdss_mdp_pipe_map(pipe);
 	if (IS_ERR_VALUE(ret)) {
 		pr_err("Unable to map used pipe%d ndx=%x\n",
